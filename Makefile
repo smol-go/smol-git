@@ -2,7 +2,6 @@
 GOCMD=go
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
-GOGET=$(GOCMD) get
 BINARY_NAME=smolgit
 
 DIST_FOLDER=build
