@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/smol-go/smol-git/internal/respository"
+	"github.com/smol-go/smol-git/respository"
 )
 
 func main() {
