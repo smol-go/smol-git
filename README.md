@@ -1,1 +1,1 @@
-An barebone implementation of git in golang
+A barebone implementation of git in golang
