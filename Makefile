@@ -4,7 +4,7 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 BINARY_NAME=smolgit
 
-DIST_FOLDER=build
+DIST_FOLDER=builds
 
 build: 
 		$(GOBUILD) -o $(BINARY_NAME) -v
