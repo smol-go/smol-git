@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/smol-go/smol-git/internal/respository"
+	"github.com/smol-go/smol-git/internal/repository"
 )
 
 func main() {
@@ -20,6 +20,14 @@ func main() {
 		if err := handleInit(); err != nil {
 			log.Fatal(err)
 		}
+	case "add":
+		if len(os.Args) < 3 {
+			fmt.Println("Usage: gogit add <file>")
+			os.Exit(1)
+		}
+		if err := handleAdd(os.Args[2]); err != nil {
+			log.Fatal(err)
+		}
 	default:
 		fmt.Printf("Unknown command: %s\n", cmd)
 		os.Exit(1)
@@ -32,10 +40,24 @@ func handleInit() error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if _, err := respository.Init(path); err != nil {
+	if _, err := repository.Init(path); err != nil {
 		return fmt.Errorf("failed to initialize repository: %w", err)
 	}
 
 	fmt.Println("Initialized empty Git repository")
+	return nil
+}
+
+func handleAdd(path string) error {
+	repo, err := repository.Open(".")
+	if err != nil {
+		return fmt.Errorf("failed to open repository: %w", err)
+	}
+
+	if err := repo.Add(path); err != nil {
+		return fmt.Errorf("failed to add file: %w", err)
+	}
+
+	fmt.Printf("Added %s to staging area\n", path)
 	return nil
 }
