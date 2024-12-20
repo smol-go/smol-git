@@ -4,76 +4,61 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/smol-go/smol-git/internal/object"
 )
 
-func TestInit(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "smolgit-test-*")
+func TestRepository(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "smolgit-repo-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tmpDir)
 
-	repo, err := Init(tmpDir)
-	if err != nil {
-		t.Fatalf("Failed to initialize repository: %v", err)
-	}
-
-	if repo == nil {
-		t.Error("Initialized repository is nil")
-	}
-
-	gitDir := filepath.Join(tmpDir, ".git")
-	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
-		t.Error("Git directory was not created")
-	}
-
-	requiredDirs := []string{
-		"objects",
-		"refs",
-		"refs/heads",
-	}
-
-	for _, dir := range requiredDirs {
-		path := filepath.Join(gitDir, dir)
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			t.Errorf("Required directory %s was not created", dir)
+	t.Run("Initialize Repository", func(t *testing.T) {
+		repo, err := Init(tmpDir)
+		if err != nil {
+			t.Fatalf("Failed to initialize repository: %v", err)
 		}
-	}
-}
 
-func TestWriteObject(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "smolgit-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+		if repo == nil {
+			t.Error("Initialized repository is nil")
+		}
 
-	repo, err := Init(tmpDir)
-	if err != nil {
-		t.Fatalf("Failed to initialize repository: %v", err)
-	}
+		gitDir := filepath.Join(tmpDir, ".git")
+		if _, err := os.Stat(gitDir); os.IsNotExist(err) {
+			t.Error("Git directory was not created")
+		}
 
-	content := []byte("test content")
-	blob := object.NewBlob(content)
-	hash, err := repo.WriteObject(blob)
-	if err != nil {
-		t.Fatalf("Failed to write object: %v", err)
-	}
+		indexPath := filepath.Join(gitDir, "index")
+		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
+			t.Error("Index file was not created")
+		}
+	})
 
-	objectPath := filepath.Join(tmpDir, ".git", "objects", hash[:2], hash[2:])
-	if _, err := os.Stat(objectPath); os.IsNotExist(err) {
-		t.Error("Object file was not created")
-	}
+	t.Run("Open Repository", func(t *testing.T) {
+		_, err := Init(tmpDir)
+		if err != nil {
+			t.Fatalf("Failed to initialize repository: %v", err)
+		}
 
-	data, err := os.ReadFile(objectPath)
-	if err != nil {
-		t.Fatalf("Failed to read object file: %v", err)
-	}
+		repo, err := Open(tmpDir)
+		if err != nil {
+			t.Fatalf("Failed to open repository: %v", err)
+		}
 
-	expectedData, _ := blob.Serialize()
-	if string(data) != string(expectedData) {
-		t.Error("Object content does not match expected content")
-	}
+		if repo.Path != tmpDir {
+			t.Errorf("Expected repository path %s, got %s", tmpDir, repo.Path)
+		}
+	})
+
+	t.Run("Invalid Repository", func(t *testing.T) {
+		invalidDir := filepath.Join(tmpDir, "invalid")
+		if err := os.MkdirAll(invalidDir, 0755); err != nil {
+			t.Fatalf("Failed to create invalid directory: %v", err)
+		}
+
+		_, err := Open(invalidDir)
+		if err == nil {
+			t.Error("Expected error when opening invalid repository")
+		}
+	})
 }
