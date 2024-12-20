@@ -22,7 +22,7 @@ func main() {
 		}
 	case "add":
 		if len(os.Args) < 3 {
-			fmt.Println("Usage: gogit add <file>")
+			fmt.Println("Usage: smolgit add <file>")
 			os.Exit(1)
 		}
 		if err := handleAdd(os.Args[2]); err != nil {

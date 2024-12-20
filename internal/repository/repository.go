@@ -5,12 +5,14 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/smol-go/smol-git/internal/index"
 	"github.com/smol-go/smol-git/internal/object"
 )
 
 type Repository struct {
-	Path string
-	refs map[string]string
+	Path  string
+	index *index.Index
+	refs  map[string]string
 }
 
 func Init(path string) (*Repository, error) {
@@ -28,9 +30,15 @@ func Init(path string) (*Repository, error) {
 		}
 	}
 
+	idx := index.NewIndex()
+	if err := idx.Write(filepath.Join(gitDir, "index")); err != nil {
+		return nil, fmt.Errorf("failed to create index: %w", err)
+	}
+
 	repo := &Repository{
-		Path: path,
-		refs: make(map[string]string),
+		Path:  path,
+		index: idx,
+		refs:  make(map[string]string),
 	}
 
 	return repo, nil
@@ -55,4 +63,71 @@ func (r *Repository) WriteObject(obj object.Object) (string, error) {
 	}
 
 	return hash, nil
+}
+
+func Open(path string) (*Repository, error) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	gitDir := findGitDirectory(absPath)
+	if gitDir == "" {
+		return nil, fmt.Errorf("not a git repository")
+	}
+
+	idx, err := index.Read(filepath.Join(gitDir, "index"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read index: %w", err)
+	}
+
+	return &Repository{
+		Path:  filepath.Dir(gitDir),
+		index: idx,
+		refs:  make(map[string]string),
+	}, nil
+}
+
+func findGitDirectory(path string) string {
+	for {
+		gitPath := filepath.Join(path, ".git")
+		if fi, err := os.Stat(gitPath); err == nil && fi.IsDir() {
+			return gitPath
+		}
+		parent := filepath.Dir(path)
+		if parent == path {
+			return ""
+		}
+		path = parent
+	}
+}
+
+func (r *Repository) Add(path string) error {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	content, err := os.ReadFile(absPath)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	blob := object.NewBlob(content)
+	hash, err := r.WriteObject(blob)
+	if err != nil {
+		return fmt.Errorf("failed to write blob: %w", err)
+	}
+
+	relPath, err := filepath.Rel(r.Path, absPath)
+	if err != nil {
+		return fmt.Errorf("failed to get relative path: %w", err)
+	}
+
+	r.index.Add(relPath, hash)
+	if err := r.index.Write(filepath.Join(r.Path, ".git", "index")); err != nil {
+		return fmt.Errorf("failed to write index: %w", err)
+	}
+
+	return nil
 }
