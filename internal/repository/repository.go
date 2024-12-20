@@ -162,3 +162,12 @@ func (r *Repository) readRef(ref string) (string, error) {
 	}
 	return strings.TrimSpace(string(data)), nil
 }
+
+func (r *Repository) Commit(message string) (string, error) {
+	commitHash, err := r.WriteObject(&object.Blob{})
+	if err != nil {
+		return "", fmt.Errorf("failed to write tree: %w", err)
+	}
+
+	return commitHash, nil
+}

@@ -32,6 +32,14 @@ func main() {
 		if err := handleStatus(); err != nil {
 			log.Fatal(err)
 		}
+	case "commit":
+		if len(os.Args) < 4 || os.Args[2] != "-m" {
+			fmt.Println("Usage: smolgit commit -m \"message\"")
+			os.Exit(1)
+		}
+		if err := handleCommit(os.Args[3]); err != nil {
+			log.Fatal(err)
+		}
 	default:
 		fmt.Printf("Unknown command: %s\n", cmd)
 		os.Exit(1)
@@ -78,5 +86,20 @@ func handleStatus() error {
 	}
 
 	fmt.Println(status)
+	return nil
+}
+
+func handleCommit(message string) error {
+	repo, err := repository.Open(".")
+	if err != nil {
+		return fmt.Errorf("failed to open repository: %w", err)
+	}
+
+	hash, err := repo.Commit(message)
+	if err != nil {
+		return fmt.Errorf("failed to commit: %w", err)
+	}
+
+	fmt.Printf("Created commit %s\n", hash[:7])
 	return nil
 }
