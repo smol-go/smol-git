@@ -3,6 +3,7 @@ package index
 import (
 	"encoding/json"
 	"os"
+	"sort"
 )
 
 type Index struct {
@@ -41,4 +42,13 @@ func (idx *Index) Write(path string) error {
 
 func (idx *Index) Add(path, hash string) {
 	idx.Entries[path] = hash
+}
+
+func (idx *Index) StagedFiles() []string {
+	var files []string
+	for path := range idx.Entries {
+		files = append(files, path)
+	}
+	sort.Strings(files)
+	return files
 }

@@ -28,6 +28,10 @@ func main() {
 		if err := handleAdd(os.Args[2]); err != nil {
 			log.Fatal(err)
 		}
+	case "status":
+		if err := handleStatus(); err != nil {
+			log.Fatal(err)
+		}
 	default:
 		fmt.Printf("Unknown command: %s\n", cmd)
 		os.Exit(1)
@@ -59,5 +63,20 @@ func handleAdd(path string) error {
 	}
 
 	fmt.Printf("Added %s to staging area\n", path)
+	return nil
+}
+
+func handleStatus() error {
+	repo, err := repository.Open(".")
+	if err != nil {
+		return fmt.Errorf("failed to open repository: %w", err)
+	}
+
+	status, err := repo.Status()
+	if err != nil {
+		return fmt.Errorf("failed to get status: %w", err)
+	}
+
+	fmt.Println(status)
 	return nil
 }

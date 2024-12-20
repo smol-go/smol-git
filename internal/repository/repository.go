@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/smol-go/smol-git/internal/index"
 	"github.com/smol-go/smol-git/internal/object"
@@ -130,4 +131,34 @@ func (r *Repository) Add(path string) error {
 	}
 
 	return nil
+}
+
+func (r *Repository) Status() (string, error) {
+	var sb strings.Builder
+
+	_, err := r.readRef("HEAD")
+	if err != nil {
+		sb.WriteString("No commits yet\n\n")
+	} else {
+		sb.WriteString("On branch master\n")
+	}
+
+	staged := r.index.StagedFiles()
+	if len(staged) > 0 {
+		sb.WriteString("\nChanges to be committed:\n")
+		for _, file := range staged {
+			sb.WriteString(fmt.Sprintf("\tmodified: %s\n", file))
+		}
+	}
+
+	return sb.String(), nil
+}
+
+func (r *Repository) readRef(ref string) (string, error) {
+	path := filepath.Join(r.Path, ".git", ref)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(data)), nil
 }
