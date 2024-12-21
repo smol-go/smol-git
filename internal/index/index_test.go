@@ -44,4 +44,18 @@ func TestIndex(t *testing.T) {
 			t.Errorf("Expected staged files %v, got %v", expected, staged)
 		}
 	})
+
+	t.Run("Remove Files", func(t *testing.T) {
+		idx := NewIndex()
+
+		idx.Add("file1.txt", "hash1")
+		if !idx.IsStaged("file1.txt") {
+			t.Error("File should be staged")
+		}
+
+		idx.Remove("file1.txt")
+		if idx.IsStaged("file1.txt") {
+			t.Error("File should not be staged after removal")
+		}
+	})
 }

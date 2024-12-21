@@ -52,3 +52,12 @@ func (idx *Index) StagedFiles() []string {
 	sort.Strings(files)
 	return files
 }
+
+func (idx *Index) Remove(path string) {
+	delete(idx.Entries, path)
+}
+
+func (idx *Index) IsStaged(path string) bool {
+	_, exists := idx.Entries[path]
+	return exists
+}
