@@ -1,29 +1,23 @@
-package object
+package blob
 
 import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-)
 
-const TypeBlob string = "blob"
+	"github.com/smol-go/smol-git/pkg/types"
+)
 
 type Blob struct {
 	content []byte
 }
 
-func (b *Blob) Type() string {
-	return TypeBlob
-}
-
-type Object interface {
-	Type() string
-	Serialize() ([]byte, error)
-	Hash() string
-}
-
 func NewBlob(content []byte) *Blob {
 	return &Blob{content: content}
+}
+
+func (b *Blob) Type() types.ObjectType {
+	return types.TypeBlob
 }
 
 func (b *Blob) Serialize() ([]byte, error) {

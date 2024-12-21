@@ -6,8 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/smol-go/smol-git/internal/blob"
+	"github.com/smol-go/smol-git/internal/commit"
 	"github.com/smol-go/smol-git/internal/index"
-	"github.com/smol-go/smol-git/internal/object"
+	"github.com/smol-go/smol-git/internal/tree"
+	"github.com/smol-go/smol-git/pkg/types"
 )
 
 type Repository struct {
@@ -45,7 +48,7 @@ func Init(path string) (*Repository, error) {
 	return repo, nil
 }
 
-func (r *Repository) WriteObject(obj object.Object) (string, error) {
+func (r *Repository) WriteObject(obj types.Object) (string, error) {
 	hash := obj.Hash()
 	objDir := filepath.Join(r.Path, ".git", "objects", hash[:2])
 	objPath := filepath.Join(objDir, hash[2:])
@@ -114,7 +117,7 @@ func (r *Repository) Add(path string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	blob := object.NewBlob(content)
+	blob := blob.NewBlob(content)
 	hash, err := r.WriteObject(blob)
 	if err != nil {
 		return fmt.Errorf("failed to write blob: %w", err)
@@ -154,6 +157,35 @@ func (r *Repository) Status() (string, error) {
 	return sb.String(), nil
 }
 
+func (r *Repository) Commit(message string) (string, error) {
+	tree := tree.NewTree()
+	for path, hash := range r.index.Entries {
+		tree.AddEntry(path, hash)
+	}
+
+	treeHash, err := r.WriteObject(tree)
+	if err != nil {
+		return "", fmt.Errorf("failed to write tree: %w", err)
+	}
+
+	commit := commit.NewCommit(treeHash, message)
+
+	if head, err := r.readRef("HEAD"); err == nil {
+		commit.Parent = head
+	}
+
+	commitHash, err := r.WriteObject(commit)
+	if err != nil {
+		return "", fmt.Errorf("failed to write commit: %w", err)
+	}
+
+	if err := r.updateRef("HEAD", commitHash); err != nil {
+		return "", fmt.Errorf("failed to update HEAD: %w", err)
+	}
+
+	return commitHash, nil
+}
+
 func (r *Repository) readRef(ref string) (string, error) {
 	path := filepath.Join(r.Path, ".git", ref)
 	data, err := os.ReadFile(path)
@@ -163,11 +195,7 @@ func (r *Repository) readRef(ref string) (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
-func (r *Repository) Commit(message string) (string, error) {
-	commitHash, err := r.WriteObject(&object.Blob{})
-	if err != nil {
-		return "", fmt.Errorf("failed to write tree: %w", err)
-	}
-
-	return commitHash, nil
+func (r *Repository) updateRef(ref, hash string) error {
+	path := filepath.Join(r.Path, ".git", ref)
+	return os.WriteFile(path, []byte(hash), 0644)
 }

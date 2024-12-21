@@ -1,16 +1,18 @@
-package object
+package blob
 
 import (
 	"bytes"
 	"testing"
+
+	"github.com/smol-go/smol-git/pkg/types"
 )
 
 func TestBlobSerialization(t *testing.T) {
 	content := []byte("test content")
 	blob := NewBlob(content)
 
-	if blob.Type() != TypeBlob {
-		t.Errorf("Expected type %s, got %s", TypeBlob, blob.Type())
+	if blob.Type() != types.TypeBlob {
+		t.Errorf("Expected type %s, got %s", types.TypeBlob, blob.Type())
 	}
 
 	serialized, err := blob.Serialize()
