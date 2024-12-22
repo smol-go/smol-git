@@ -61,3 +61,7 @@ func (idx *Index) IsStaged(path string) bool {
 	_, exists := idx.Entries[path]
 	return exists
 }
+
+func (idx *Index) Clear() {
+	idx.Entries = make(map[string]string)
+}
